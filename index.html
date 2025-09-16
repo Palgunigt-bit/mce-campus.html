@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Malnad College of Engineering – Live Campus Map</title>
+
+<!-- Leaflet CSS for interactive maps -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+<style>
+  /* Make the map fill almost the whole screen on any device */
+  body { margin:0; font-family: Arial, sans-serif; }
+  header {
+    background:#2d6cdf; color:white; text-align:center;
+    padding:12px; font-size:1.2rem;
+  }
+  #map { height: 90vh; width: 100%; }
+</style>
+</head>
+<body>
+
+<header>Malnad College of Engineering – Live GPS Map</header>
+<div id="map"></div>
+
+<!-- Leaflet JavaScript -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+// ---------------------------------------------------------
+// 1. Center the map roughly on the MCE campus (Hassan, India)
+const campusCenter = [13.0011, 76.1043];
+const map = L.map('map').setView(campusCenter, 17);
+
+// Add OpenStreetMap base tiles
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+// ---------------------------------------------------------
+// 2. Internal Buildings (Nodes) – Replace coords with accurate ones if available
+const buildings = {
+  "Admin Block"   : [13.0015, 76.1040],
+  "Library"       : [13.0010, 76.1035],
+  "Mechanical Lab": [13.0007, 76.1045],
+  "Hostel"        : [12.9998, 76.1038],
+  "Canteen"       : [13.0002, 76.1042]
+};
+
+// Place a marker for each building
+for (let name in buildings) {
+  L.marker(buildings[name]).addTo(map).bindPopup(name);
+}
+
+// ---------------------------------------------------------
+// 3. Paths (Edges) connecting buildings
+const paths = [
+  ["Admin Block","Library"],
+  ["Library","Canteen"],
+  ["Canteen","Mechanical Lab"],
+  ["Library","Hostel"],
+  ["Hostel","Mechanical Lab"]
+];
+
+// Draw blue lines for the internal walkways
+paths.forEach(([a,b])=>{
+  L.polyline([buildings[a], buildings[b]], {color:'blue'}).addTo(map);
+});
+
+// ---------------------------------------------------------
+// 4. Live GPS Tracking – shows your real position
+let userMarker = null;
+
+if ("geolocation" in navigator) {
+  navigator.geolocation.watchPosition(
+    pos => {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+
+      if (userMarker) {
+        // Update position if marker exists
+        userMarker.setLatLng([lat, lon]);
+      } else {
+        // Create the marker first time
+        userMarker = L.marker([lat, lon], {
+          icon: L.icon({
+            iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [0, -30]
+          })
+        }).addTo(map).bindPopup("You are here");
+      }
+
+      // Optionally re-center map on the user
+      // map.setView([lat, lon], 18);
+    },
+    err => {
+      alert("Location access denied or unavailable.");
+      console.error(err);
+    },
+    { enableHighAccuracy: true, maximumAge: 0 }
+  );
+} else {
+  alert("Geolocation not supported on this device/browser.");
+}
+</script>
+
+</body>
+</html>
